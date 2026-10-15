@@ -1,5 +1,11 @@
 Wenku8 Flutter
 
+iOS fork changes, 2026-10-15:
+Native Swift transport using the relay's public legacy request envelope,
+Keychain session storage, iOS file/share/idle-timer integration, background
+audio configuration, iPhone 17 Pro Max layout coverage and unsigned IPA CI.
+The iOS implementation does not load or modify the Android JNI runtime.
+
 Based on MewX/light-novel-library_Wenku8_Android and its contributors.
 https://github.com/MewX/light-novel-library_Wenku8_Android
 

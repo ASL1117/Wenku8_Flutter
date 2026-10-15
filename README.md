@@ -4,6 +4,8 @@
 
 <h1 align="center">Wenku8 Flutter</h1>
 
+本 Fork 增加 iOS 联网实现与 iPhone 17 Pro Max 适配；见 [iOS 移植与 IPA 构建说明](docs/work-items/iOS移植/iOS移植与IPA构建说明.md)。
+
 <p align="center">基于 Flutter 的 Android 轻小说阅读客户端</p>
 
 <p align="center">

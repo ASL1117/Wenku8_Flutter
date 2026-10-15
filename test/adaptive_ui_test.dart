@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -137,13 +136,12 @@ void main({AdaptiveCapture? capture, bool native = false}) {
     });
   }
   for (final profile in _profiles) {
+    final TestVariant<Object?> variant = profile.name.startsWith('iphone-')
+        ? TargetPlatformVariant.only(TargetPlatform.iOS)
+        : const DefaultTestVariant();
     testWidgets('adaptive ${profile.name}: library, overlays and listening', (
       tester,
     ) async {
-      if (profile.name.startsWith('iphone-')) {
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      }
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = profile.size;
       tester.view.padding = FakeViewPadding(
@@ -427,6 +425,6 @@ void main({AdaptiveCapture? capture, bool native = false}) {
       onScreen(find.byKey(const ValueKey('download-app-update')));
       await snapshot('update-download');
       await tester.pumpWidget(const SizedBox.shrink());
-    });
+    }, variant: variant);
   }
 }
