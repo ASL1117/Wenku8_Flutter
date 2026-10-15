@@ -1,4 +1,6 @@
 import Flutter
+import CoreFoundation
+import Security
 import UIKit
 import XCTest
 @testable import Runner
@@ -54,7 +56,7 @@ class RunnerTests: XCTestCase {
     }
     wait(for: [completed], timeout: 40)
     if let error = response as? FlutterError {
-      XCTFail("Legacy bridge returned \(error.code)")
+      XCTFail("Legacy bridge \(method) returned \(error.code): \(error.message ?? "")")
       throw WenkuError.invalid
     }
     return response
@@ -78,11 +80,62 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(request.httpBody, Data(expected.utf8))
   }
 
+  func testReviewChineseUsesGBKBytes() throws {
+    logGBKFixtureDiagnostics()
+    let encoded = try WenkuWire.encodeReview("中文")
+    XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
+      "%D6%D0%CE%C4", "Chinese GBK byte mapping differs")
+  }
+
+  func testReviewUsesFormEncoding() throws {
+    let encoded = try WenkuWire.encodeReview(" +&~.-*_")
+    XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
+      "+%2B%26%7E.-*_", "GBK form escaping differs from java.net.URLEncoder")
+  }
+
   func testReviewUsesGBKFormEncoding() throws {
     let encoded = try WenkuWire.encodeReview("中文 +&~")
     XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
       "%D6%D0%CE%C4+%2B%26%7E")
-    XCTAssertThrowsError(try WenkuWire.encodeReview("😀"))
+  }
+
+  func testReviewRejectsEmoji() throws {
+    XCTAssertThrowsError(try WenkuWire.encodeReview("😀"), "GBK must reject an unrepresentable emoji")
+  }
+
+  private func logGBKFixtureDiagnostics() {
+    let cf = CFStringEncoding(CFStringEncodings.GBK_95.rawValue)
+    let ns = CFStringConvertEncodingToNSStringEncoding(cf)
+    let encoding = String.Encoding(rawValue: ns)
+    print("GBK fixture diagnostics: cf=\(cf) ns=\(ns) available=\(CFStringIsEncodingAvailable(cf))")
+    for fixture in ["中文", " +&~.-*_", "😀"] {
+      let bytes = fixture.data(using: encoding, allowLossyConversion: false)
+      let hex = bytes?.map { String(format: "%02X", $0) }.joined() ?? "nil"
+      let roundtrip = bytes.flatMap { String(data: $0, encoding: encoding) } == fixture
+      print("GBK fixed fixture scalars=\(fixture.unicodeScalars.map { String($0.value, radix: 16) }) hex=\(hex) roundtrip=\(roundtrip)")
+    }
+  }
+
+  func testKeychainDeviceBoundFixtureStorage() throws {
+    // A throwaway fixture proves the simulator signing permits the production accessibility class.
+    let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "wenku8-runner-test-" + UUID().uuidString,
+      kSecAttrAccount as String: "fixture"]
+    defer { SecItemDelete(query as CFDictionary) }
+    var entry = query
+    entry[kSecValueData as String] = Data("fixture-session".utf8)
+    entry[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    let added = SecItemAdd(entry as CFDictionary, nil)
+    XCTAssertEqual(added, errSecSuccess, "SecItemAdd status=\(added), message=\(SecCopyErrorMessageString(added, nil) as String? ?? "unknown")")
+    guard added == errSecSuccess else { return }
+    var lookup = query
+    lookup[kSecReturnData as String] = true
+    var stored: CFTypeRef?
+    let read = SecItemCopyMatching(lookup as CFDictionary, &stored)
+    XCTAssertEqual(read, errSecSuccess, "SecItemCopyMatching status=\(read)")
+    XCTAssertEqual(stored as? Data, Data("fixture-session".utf8))
+    let deleted = SecItemDelete(query as CFDictionary)
+    XCTAssertEqual(deleted, errSecSuccess, "SecItemDelete status=\(deleted)")
   }
 
   func testImagePolicyRejectsUntrustedAddresses() throws {

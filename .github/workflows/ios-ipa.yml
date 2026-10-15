@@ -7,6 +7,11 @@ permissions:
   contents: read
 
 jobs:
+  encoding-diagnostic:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift scripts/probe_gbk.swift
   build:
     runs-on: macos-15
     timeout-minutes: 60
@@ -30,13 +35,6 @@ jobs:
         run: flutter test test/adaptive_ui_test.dart test/feature_unification_ui_test.dart
       - name: Live read-only API probe
         run: python3 scripts/probe_wenku_api.py
-      - name: Native bridge tests on iPhone 17 Pro Max simulator
-        run: |
-          set -euo pipefail
-          flutter build ios --simulator --debug
-          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"] == "iPhone 17 Pro Max"))')
-          xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -only-testing:RunnerTests CODE_SIGNING_ALLOWED=NO
-          flutter test integration_test/api_probe_test.dart -d "$device_id" --plain-name '真实目录与章节正文可加载'
       - name: Build arm64 device app
         run: flutter build ios --release --no-codesign
       - name: Package and verify unsigned IPA
@@ -65,3 +63,29 @@ jobs:
             dist/ios/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Native bridge tests on iPhone 17 Pro Max simulator
+        run: |
+          set -euo pipefail
+          flutter build ios --simulator --debug
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"] == "iPhone 17 Pro Max"))')
+          xcrun simctl boot "$device_id" || true
+          xcrun simctl bootstatus "$device_id" -b
+          set +e
+          xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -parallel-testing-enabled NO -only-testing:RunnerTests -resultBundlePath build/ios/BridgeTests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- > build/ios/native-tests.log 2>&1
+          test_status=$?
+          set -e
+          tail -n 100 build/ios/native-tests.log
+          xcrun xcresulttool get test-results summary --path build/ios/BridgeTests.xcresult | tee build/ios/native-test-summary.json || true
+          test "$test_status" -eq 0
+          flutter test integration_test/api_probe_test.dart -d "$device_id" --plain-name '真实目录与章节正文可加载'
+      - name: Save native test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-native-test-results
+          path: |
+            build/ios/BridgeTests.xcresult
+            build/ios/native-tests.log
+            build/ios/native-test-summary.json
+          if-no-files-found: ignore
+          retention-days: 7
