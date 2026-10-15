@@ -7,11 +7,6 @@ permissions:
   contents: read
 
 jobs:
-  encoding-diagnostic:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - run: swift scripts/probe_gbk.swift
   build:
     runs-on: macos-15
     timeout-minutes: 60
@@ -64,15 +59,18 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Native bridge tests on iPhone 17 Pro Max simulator
+        timeout-minutes: 20
         run: |
           set -euo pipefail
+          echo 'Selecting the newest available iPhone 17 Pro Max runtime'
+          mkdir -p build/ios
+          xcrun simctl list devices available -j > build/ios/devices.json
+          device_id=$(python3 -c 'import json,re; devices=json.load(open("build/ios/devices.json"))["devices"]; choices=[(tuple(map(int,re.findall(r"\d+",runtime))),d["udid"]) for runtime,group in devices.items() for d in group if d["name"]=="iPhone 17 Pro Max"]; print(max(choices)[1])')
+          echo "Selected simulator: $device_id"
           flutter build ios --simulator --debug
-          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"] == "iPhone 17 Pro Max"))')
-          xcrun simctl boot "$device_id" || true
-          xcrun simctl bootstatus "$device_id" -b
           set +e
-          xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -parallel-testing-enabled NO -only-testing:RunnerTests -resultBundlePath build/ios/BridgeTests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- > build/ios/native-tests.log 2>&1
-          test_status=$?
+          xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -destination-timeout 120 -parallel-testing-enabled NO -only-testing:RunnerTests -resultBundlePath build/ios/BridgeTests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- 2>&1 | tee build/ios/native-tests.log
+          test_status=${PIPESTATUS[0]}
           set -e
           tail -n 100 build/ios/native-tests.log
           xcrun xcresulttool get test-results summary --path build/ios/BridgeTests.xcresult | tee build/ios/native-test-summary.json || true
