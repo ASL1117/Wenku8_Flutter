@@ -67,7 +67,7 @@ class BookCommunityActions extends StatelessWidget {
     final text =
         '${novel.title}\n${novel.author}\nhttps://www.wenku8.net/book/${novel.id}.htm';
     try {
-      if (LocalPlatform.android) {
+      if (LocalPlatform.mobile) {
         await LocalPlatform.shareText(text);
       } else {
         await Clipboard.setData(ClipboardData(text: text));

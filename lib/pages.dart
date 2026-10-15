@@ -1506,7 +1506,7 @@ class SettingsPage extends StatelessWidget {
                   onCommitted: (value) =>
                       _savePreference(context, () => state.setFontSize(value)),
                 ),
-                if (LocalPlatform.android)
+                if (LocalPlatform.mobile)
                   Row(
                     children: [
                       Icon(
@@ -1705,6 +1705,8 @@ class SettingsPage extends StatelessWidget {
                 reduceMotion: state.reduceMotion,
               ),
             ),
+          ],
+          if (LocalPlatform.mobile) ...[
             const SizedBox(height: 14),
             FeatureEntry(
               title: '清理插图缓存',

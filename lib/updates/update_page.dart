@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_interactions.dart';
@@ -122,6 +123,15 @@ class AppUpdatePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                const ContentPanel(
+                  child: Text(
+                    'iPhone 版本请通过原安装方式更新签名后的 IPA，阅读记录保留在本机；更新前也可导出备份。',
+                    style: TextStyle(height: 1.6),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               if (service != null) ...[
                 ContentPanel(
                   child: Column(
@@ -303,7 +313,7 @@ class AppUpdatePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '内置字体：Adobe 思源宋体 CN，SIL OFL 1.1。在线语音协议适配：rany2/edge-tts，LGPL v3。接口运行库 libcpp.so 原样保留，其授权独立于本项目源码。',
+                      '内置字体：Adobe 思源宋体 CN，SIL OFL 1.1。在线语音协议适配：rany2/edge-tts，LGPL v3。Android 接口运行库 libcpp.so 原样保留，其授权独立于本项目；iOS 使用独立实现的联网接口。',
                       style: TextStyle(height: 1.6),
                     ),
                     GlassTextButton(

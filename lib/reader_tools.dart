@@ -294,7 +294,7 @@ class _ReaderToolsState extends State<ReaderTools> {
                       : () => Navigator.pop(context, const ReaderOpenFind()),
                   child: const Text('章内查找'),
                 ),
-                if (LocalPlatform.android)
+                if (LocalPlatform.mobile)
                   AnimatedBuilder(
                     animation: widget.state.readerBehaviorChanges,
                     builder: (context, _) => Row(

@@ -5,11 +5,13 @@ import 'package:flutter/widgets.dart';
 import 'library_state.dart';
 
 /// Separate from the legacy API/JNI contract. Only explicit user file actions
-/// open the Android picker; the normal reader does not alter system settings.
+/// open the system picker; the normal reader does not alter system settings.
 abstract final class LocalPlatform {
   static const channel = MethodChannel('org.mewx.wenku8/local_tools');
   static bool get android =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static bool get mobile =>
+      android || (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS);
   static Future<bool> exportBackup(String text, String name) async =>
       await channel.invokeMethod<bool>('exportBackup', {
         'text': text,
@@ -26,7 +28,7 @@ abstract final class LocalPlatform {
   static bool _requestedAwake = false;
 
   static void keepScreen(Object owner, bool enabled) {
-    if (enabled && android) {
+    if (enabled && mobile) {
       _awakeOwners.add(owner);
     } else {
       _awakeOwners.remove(owner);

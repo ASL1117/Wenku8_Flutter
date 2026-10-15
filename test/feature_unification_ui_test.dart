@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -414,6 +415,66 @@ void main({
   );
 
   testWidgets(
+    'mobile backup file actions export records and handle cancelled invalid and valid imports',
+    (tester) async {
+      String? selected;
+      Map<Object?, Object?>? exported;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(LocalPlatform.channel, (call) async {
+            if (call.method == 'exportBackup') {
+              exported = call.arguments as Map<Object?, Object?>;
+              return true;
+            }
+            if (call.method == 'importBackup') return selected;
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(LocalPlatform.channel, null),
+      );
+      await mount(tester, LibraryBackupPage(state: state));
+      await tester.tap(_tapKey('backup-export-file'));
+      await io(tester);
+      expect(exported!['name'], startsWith('wenku8-backup-'));
+      final saved = await tester.runAsync(
+        () => LibraryBackup.parse(exported!['text'] as String),
+      );
+      expect(saved!.shelfCount, 0);
+      await tester.tap(_tapKey('backup-import-file'));
+      await io(tester);
+      expect(find.byKey(const ValueKey('backup-preview')), findsNothing);
+      expect(find.byKey(const ValueKey('backup-error')), findsNothing);
+      selected = '{}';
+      await tester.tap(_tapKey('backup-import-file'));
+      await io(tester);
+      expect(find.byKey(const ValueKey('backup-error')), findsOneWidget);
+      expect(state.shelf, isEmpty);
+      selected = await tester.runAsync(() async {
+        final backup = await LibraryBackup.fromRecords({
+          'shelf': ['71'],
+          'novel_meta_71': jsonEncode(repository.books[71]!.toSnapshot()),
+        });
+        return backup.encode();
+      });
+      await tester.tap(_tapKey('backup-import-file'));
+      await io(tester);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('backup-preview')),
+        160,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('backup-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
+      expect(find.byKey(const ValueKey('backup-error')), findsNothing);
+      expect(state.shelf, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+    skip: nativePlatform,
+    variant: TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
+
+  testWidgets(
     'backup clipboard preview makes no changes until explicit merge and supports cancellation',
     (tester) async {
       final backup = await tester.runAsync(
@@ -617,5 +678,6 @@ void main({
       expect(await awake(), isFalse);
       expect(tester.takeException(), isNull);
     },
+    variant: TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
   );
 }

@@ -110,11 +110,11 @@ class _LibraryBackupPageState extends State<LibraryBackupPage> {
             child: ListView(
               key: const ValueKey('backup-scroll'),
               padding: EdgeInsets.fromLTRB(
-                24,
+                24 + MediaQuery.paddingOf(context).left,
                 MediaQuery.paddingOf(context).top +
                     FrostedHeader.toolbarHeight +
                     20,
-                24,
+                24 + MediaQuery.paddingOf(context).right,
                 MediaQuery.paddingOf(context).bottom + 32,
               ),
               children: [
@@ -129,7 +129,7 @@ class _LibraryBackupPageState extends State<LibraryBackupPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (LocalPlatform.android) ...[
+                      if (LocalPlatform.mobile) ...[
                         GlassTextButton(
                           key: const ValueKey('backup-export-file'),
                           onPressed: _busy == null ? _export : null,

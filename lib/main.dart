@@ -42,17 +42,21 @@ Future<void> main() async {
       WidgetsBinding.instance.platformDispatcher.platformBrightness,
   };
   SystemChrome.setSystemUIOverlayStyle(novelSystemUiStyle(brightness));
+  // Both mobile platforms provide the native API and file bridges.
+  final mobile = !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
   final remote = LegacyWenkuRepository();
-  final repository = defaultTargetPlatform == TargetPlatform.android
+  final repository = mobile
       ? OfflineNovelRepository(
           remote: remote,
           cache: await OfflineCacheStore.forApp(),
         )
       : const DemoNovelRepository();
-  final features = defaultTargetPlatform == TargetPlatform.android
+  final features = mobile
       ? WenkuFeatures(account: WenkuAccount(), publications: remote)
       : null;
-  final listening = defaultTargetPlatform == TargetPlatform.android
+  final listening = mobile
       ? ListeningController(
           repository: repository,
           audio: await SpeechAudioCache.forApp(),

@@ -1,0 +1,66 @@
+name: iOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: stable
+          cache: true
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          flutter --version
+          xcrun simctl list devices available
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter analyze
+      - name: Flutter tests including iPhone 17 Pro Max layouts
+        run: flutter test
+      - name: Live read-only API probe
+        run: python3 scripts/probe_wenku_api.py
+      - name: Native bridge tests on iPhone 17 Pro Max simulator
+        run: |
+          set -euo pipefail
+          flutter build ios --simulator --debug
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"] == "iPhone 17 Pro Max"))')
+          xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -only-testing:RunnerTests CODE_SIGNING_ALLOWED=NO
+      - name: Build arm64 device app
+        run: flutter build ios --release --no-codesign
+      - name: Package and verify unsigned IPA
+        run: |
+          set -euo pipefail
+          app_path="$PWD/build/ios/iphoneos/Runner.app"
+          xcrun lipo "$app_path/Runner" -verify_arch arm64
+          test -d "$app_path/Frameworks/App.framework"
+          test -d "$app_path/Frameworks/Flutter.framework"
+          if find "$app_path" -name libcpp.so | grep -q .; then
+            echo 'Unexpected Android runtime in iOS app'
+            exit 1
+          fi
+          mkdir -p dist/ios/Payload
+          cp -R "$app_path" dist/ios/Payload/
+          cd dist/ios
+          zip -q -r -y Wenku8-0.2.3-ios-arm64-unsigned.ipa Payload
+          unzip -tq Wenku8-0.2.3-ios-arm64-unsigned.ipa
+          shasum -a 256 Wenku8-0.2.3-ios-arm64-unsigned.ipa > SHA256SUMS.txt
+          /usr/libexec/PlistBuddy -c Print Payload/Runner.app/Info.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wenku8-ios-arm64-unsigned
+          path: |
+            dist/ios/*.ipa
+            dist/ios/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
