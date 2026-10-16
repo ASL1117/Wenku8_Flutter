@@ -41,3 +41,16 @@ python scripts/probe_wenku_api.py
 应用按 `Payload/Runner.app` 打包，保留框架符号链接，并检查 arm64、Flutter/App 框架、ZIP 完整性及 SHA-256。产物为 `Wenku8-0.2.3-ios-arm64-unsigned.ipa` 和 `SHA256SUMS.txt`，保留 30 天。
 
 这是未签名 IPA，需要由 SideStore、AltStore 或 Sideloadly 使用自己的 Apple 账号重新签名后安装。无需把 Apple 密码、验证码或证书发到聊天中。生成 IPA 不代表已通过真实 iPhone 安装验收。
+
+## 书评 GBK 字符契约与来源
+
+书评与原 Android `Charset.forName("GBK")` / `URLEncoder` 保持一致：Android ICU 将 `GBK` 别名映射到 `windows-936-2000`，不能直接以桌面 OpenJDK 的同名映射为依据。例如 Android 接受 `U+2295 → A892`、`U+E7C8 → A8BF`，拒绝 `U+2641`；桌面 OpenJDK 的 `GBK.map` 对 `A892` 则定义为 `U+2641`。欧元符号在 Android 为单字节 `80`。
+
+iOS 实测缺少 Foundation GBK 转换器，因此普通字符采用系统 `libiconv` 严格转换。Apple 的 GBK 私用区和少量 Unicode 映射与 Android 不同，编码层按 Android 官方数据补全全部 2150 个私用字符：`E000–E864` 及 `F8F5`，其中主要用户区使用行列公式，末 255 个字符压缩为 27 段；同时保持欧元、横线、全角英镑符号的 Android 字节，并拒绝 Apple 新分配但 Android GBK 不支持的 80 个字符。没有引入完整字符表或新第三方库。测试以官方原始映射独立计算的 SHA-256 校验全部私用字符输出，另覆盖不可表示字符、空串、嵌入 NUL 和长度边界。
+
+来源与数据许可：
+
+- [Android ICU GBK 别名](https://android.googlesource.com/platform/external/icu/+/refs/heads/main/icu4c/source/data/mappings/convrtrs.txt)
+- [Android ICU windows-936-2000 官方映射](https://android.googlesource.com/platform/external/icu/+/refs/heads/main/icu4c/source/data/mappings/windows-936-2000.ucm)，映射数据来自 Unicode ICU，遵循 [Unicode 数据与软件许可](https://www.unicode.org/license.txt)。本次只使用映射事实及压缩数字范围。
+- [Apple libiconv GBK 定义](https://github.com/apple-oss-distributions/libiconv/blob/main/esdb/GB/GBK.src)及 [Apple GB2312 扩展映射](https://github.com/apple-oss-distributions/libiconv/blob/main/csmapper/GB/UCS%25GB2312EXT.src)，用于核对系统转换器行为，没有复制其实现代码。
+- [桌面 OpenJDK GBK 对照表](https://github.com/openjdk/jdk/blob/master/make/data/charsetmapping/GBK.map)，仅用于说明平台差异，未作为 Android 契约。

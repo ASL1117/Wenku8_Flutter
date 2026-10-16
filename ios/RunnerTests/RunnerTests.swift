@@ -1,4 +1,5 @@
 import Flutter
+import CryptoKit
 import Security
 import UIKit
 import XCTest
@@ -101,10 +102,26 @@ class RunnerTests: XCTestCase {
     XCTAssertThrowsError(try WenkuWire.encodeReview("😀"), "GBK must reject an unrepresentable emoji")
   }
 
-  func testReviewRetainsLegacyGBKMapping() throws {
-    let encoded = try WenkuWire.encodeReview("\u{2641}\u{E7C8}")
+  func testReviewRetainsAndroidGBKMapping() throws {
+    let encoded = try WenkuWire.encodeReview("\u{2295}\u{E7C8}")
     XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
-      "%A8%92%A8%BF", "GBK byte mapping must not change to GB18030")
+      "%A8%92%A8%BF", "Android ICU GBK differs from desktop OpenJDK GBK")
+    for text in ["\u{2641}", "\u{01F9}", "\u{2E81}", "\u{303E}"] {
+      XCTAssertThrowsError(try WenkuWire.encodeReview(text), "Do not expand Android's GBK repertoire")
+    }
+    let aliases = try WenkuWire.encodeReview("\u{20AC}\u{2015}\u{FFE1}")
+    XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: aliases)), encoding: .utf8), "%80%A8%44%A1%EA")
+  }
+
+  func testReviewAllAndroidGBKPrivateUseMappings() throws {
+    var text = ""
+    for value in 0xE000...0xE864 { text.unicodeScalars.append(UnicodeScalar(value)!) }
+    text.unicodeScalars.append(UnicodeScalar(0xF8F5)!)
+    let form = try XCTUnwrap(Data(base64Encoded: WenkuWire.encodeReview(text)))
+    // Independently calculated from Android ICU's windows-936-2000.ucm |0 mappings.
+    let digest = SHA256.hash(data: form).map { String(format: "%02x", $0) }.joined()
+    XCTAssertEqual(form.count, 12_897)
+    XCTAssertEqual(digest, "5eb72193aecf1d476095b07b8144248a1d96d30222c13e0665bdd9204ae5bfa0")
   }
 
   func testReviewEmptyAndBoundedInput() throws {

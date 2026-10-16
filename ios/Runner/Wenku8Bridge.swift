@@ -230,7 +230,46 @@ enum WenkuWire {
 
   static func encodeReview(_ text: String) throws -> String {
     guard text.utf16.count <= 10_000 else { throw WenkuError.reviewEncoding }
-    if text.isEmpty { return "" }
+    var bytes = [UInt8]()
+    var run = ""
+    for scalar in text.unicodeScalars {
+      guard !nonAndroidGBKScalars.contains(scalar.value) else { throw WenkuError.reviewEncoding }
+      if let code = androidGBKCode(scalar.value) {
+        bytes += try systemGBKBytes(run)
+        run = ""
+        if code > 0xFF { bytes.append(UInt8(code >> 8)) }
+        bytes.append(UInt8(code & 0xFF))
+      } else {
+        run.unicodeScalars.append(scalar)
+      }
+    }
+    bytes += try systemGBKBytes(run)
+    // Android's URLEncoder uses ICU GBK, followed by UTF-8 Base64.
+    let safe = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-*_".utf8)
+    var encoded = ""
+    var index = 0
+    while index < bytes.count {
+      let byte = bytes[index]
+      if byte < 0x80 {
+        if byte == 32 { encoded += "+" }
+        else if safe.contains(byte) { encoded += String(UnicodeScalar(byte)) }
+        else { encoded += String(format: "%%%02X", byte) }
+      } else {
+        encoded += String(format: "%%%02X", byte)
+        if byte >= 0x81 && byte <= 0xFE {
+          // A GBK character's ASCII-valued trail is escaped with its lead byte.
+          index += 1
+          guard index < bytes.count else { throw WenkuError.reviewEncoding }
+          encoded += String(format: "%%%02X", bytes[index])
+        }
+      }
+      index += 1
+    }
+    return Data(encoded.utf8).base64EncodedString()
+  }
+
+  private static func systemGBKBytes(_ text: String) throws -> [UInt8] {
+    if text.isEmpty { return [] }
     let input = Data(text.utf8)
     // GBK uses at most as many bytes as the same valid UTF-8 text.
     var bytes = [UInt8](repeating: 0, count: input.count)
@@ -242,15 +281,67 @@ enum WenkuWire {
     }
     guard converted != 0 else { throw WenkuError.reviewEncoding }
     bytes.removeSubrange(length...)
-    // java.net.URLEncoder's GBK form encoding, followed by UTF-8 Base64.
-    let safe = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-*_".utf8)
-    let encoded = bytes.map { byte -> String in
-      if byte == 32 { return "+" }
-      if safe.contains(byte) { return String(UnicodeScalar(byte)) }
-      return String(format: "%%%02X", byte)
-    }.joined()
-    return Data(encoded.utf8).base64EncodedString()
+    return bytes
   }
+
+  // Android ICU aliases GBK to windows-936-2000, unlike desktop OpenJDK GBK.
+  // Mapping facts from Unicode ICU's windows-936-2000.ucm (Unicode license):
+  // https://android.googlesource.com/platform/external/icu/+/refs/heads/main/icu4c/source/data/mappings/windows-936-2000.ucm
+  private static func androidGBKCode(_ scalar: UInt32) -> UInt32? {
+    if scalar == 0x20AC { return 0x80 }
+    if scalar == 0xF8F5 { return 0xFF }
+    // These standard characters otherwise take Apple iconv's non-reversible aliases.
+    if scalar == 0x2015 { return 0xA844 }
+    if scalar == 0xFFE1 { return 0xA1EA }
+    if (0xE000...0xE4C5).contains(scalar) {
+      let offset = scalar - 0xE000
+      let lead = offset < 564 ? 0xAA + offset / 94 : 0xF8 + (offset - 564) / 94
+      return lead * 256 + 0xA1 + offset % 94
+    }
+    if (0xE4C6...0xE765).contains(scalar) {
+      let offset = scalar - 0xE4C6
+      var trail = 0x40 + offset % 96
+      if trail >= 0x7F { trail += 1 }
+      return (0xA1 + offset / 96) * 256 + trail
+    }
+    for (start, end, first) in privateUseTail where scalar >= start && scalar <= end {
+      return first + scalar - start
+    }
+    return nil
+  }
+
+  // All 255 remaining ICU private-use mappings, compressed into 27 linear spans.
+  private static let privateUseTail: [(UInt32, UInt32, UInt32)] = [
+    (0xE766, 0xE76B, 0xA2AB), (0xE76C, 0xE76D, 0xA2E3),
+    (0xE76E, 0xE76F, 0xA2EF), (0xE770, 0xE771, 0xA2FD),
+    (0xE772, 0xE77C, 0xA4F4), (0xE77D, 0xE784, 0xA5F7),
+    (0xE785, 0xE78C, 0xA6B9), (0xE78D, 0xE793, 0xA6D9),
+    (0xE794, 0xE795, 0xA6EC), (0xE796, 0xE796, 0xA6F3),
+    (0xE797, 0xE79F, 0xA6F6), (0xE7A0, 0xE7AE, 0xA7C2),
+    (0xE7AF, 0xE7BB, 0xA7F2), (0xE7BC, 0xE7C6, 0xA896),
+    (0xE7C7, 0xE7C7, 0xA8BC), (0xE7C8, 0xE7C8, 0xA8BF),
+    (0xE7C9, 0xE7CC, 0xA8C1), (0xE7CD, 0xE7E1, 0xA8EA),
+    (0xE7E2, 0xE7E2, 0xA958), (0xE7E3, 0xE7E3, 0xA95B),
+    (0xE7E4, 0xE7E6, 0xA95D), (0xE7E7, 0xE7F3, 0xA989),
+    (0xE7F4, 0xE800, 0xA997), (0xE801, 0xE80F, 0xA9F0),
+    (0xE810, 0xE814, 0xD7FA), (0xE815, 0xE843, 0xFE50),
+    (0xE844, 0xE864, 0xFE80)
+  ]
+
+  // Apple GBK assigns these bytes to newer Unicode characters; Android ICU
+  // keeps their original private-use assignments instead. Do not expand its contract.
+  private static let nonAndroidGBKScalars: Set<UInt32> = [
+    0x01F9, 0x2E81, 0x2E84, 0x2E88, 0x2E8B, 0x2E8C, 0x2E97,
+    0x2EA7, 0x2EAA, 0x2EAE, 0x2EB3, 0x2EB6, 0x2EB7, 0x2EBB, 0x2ECA,
+    0x2FF0, 0x2FF1, 0x2FF2, 0x2FF3, 0x2FF4, 0x2FF5, 0x2FF6, 0x2FF7,
+    0x2FF8, 0x2FF9, 0x2FFA, 0x2FFB, 0x303E, 0x3447, 0x3473, 0x359E,
+    0x360E, 0x361A, 0x3918, 0x396E, 0x39CF, 0x39D0, 0x39DF, 0x3A73,
+    0x3B4E, 0x3C6E, 0x3CE0, 0x4056, 0x415F, 0x4337, 0x43AC, 0x43B1,
+    0x43DD, 0x44D6, 0x464C, 0x4661, 0x4723, 0x4729, 0x477C, 0x478D,
+    0x4947, 0x497A, 0x497D, 0x4982, 0x4983, 0x4985, 0x4986, 0x499B,
+    0x499F, 0x49B6, 0x49B7, 0x4C77, 0x4C9F, 0x4CA0, 0x4CA1, 0x4CA2,
+    0x4CA3, 0x4D13, 0x4D14, 0x4D15, 0x4D16, 0x4D17, 0x4D18, 0x4D19, 0x4DAE
+  ]
 }
 
 enum WenkuIllustrationPolicy {
