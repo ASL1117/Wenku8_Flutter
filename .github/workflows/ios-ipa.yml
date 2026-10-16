@@ -79,7 +79,18 @@ jobs:
       - name: Live Dart to iOS channel test
         if: ${{ !cancelled() && env.IOS_TEST_DEVICE != '' }}
         timeout-minutes: 15
-        run: flutter test integration_test/api_probe_test.dart -d "$IOS_TEST_DEVICE" --plain-name '真实目录与章节正文可加载'
+        run: |
+          set -euo pipefail
+          # Xcode shuts down its test simulator; Flutter discovers booted devices only.
+          xcrun simctl list devices available -j > build/ios/devices-after-tests.json
+          state=$(python3 -c 'import json,os; devices=json.load(open("build/ios/devices-after-tests.json"))["devices"]; print(next(d["state"] for group in devices.values() for d in group if d["udid"]==os.environ["IOS_TEST_DEVICE"]))')
+          if [ "$state" != Booted ]; then
+            xcrun simctl boot "$IOS_TEST_DEVICE"
+          fi
+          open -a Simulator --args -CurrentDeviceUDID "$IOS_TEST_DEVICE"
+          xcrun simctl bootstatus "$IOS_TEST_DEVICE" -b
+          flutter devices --device-timeout 60
+          flutter test integration_test/api_probe_test.dart --no-pub -d "$IOS_TEST_DEVICE" --plain-name '真实目录与章节正文可加载'
       - name: Save native test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
