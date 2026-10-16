@@ -8,7 +8,7 @@
 
 账号 Cookie 只保存在原生层和设备绑定 Keychain，不进入 Dart、备份或日志。账号操作串行处理；公开浏览与图片请求不携带账号 Cookie。未使用真实账号验证登录、云书架写入和发帖。
 
-插图仅允许既有文库域名与已使用的图片 CDN，重定向逐跳校验并升级历史 HTTP 地址；限制单次响应 8 MiB、图片 5000 万像素、磁盘图片缓存 256 MiB。书评编码保持既有 GBK 契约，拒绝无法编码的字符。
+插图仅允许既有文库域名与已使用的图片 CDN，重定向逐跳校验并升级历史 HTTP 地址；限制单次响应 8 MiB、图片 5000 万像素、磁盘图片缓存 256 MiB。书评使用 iOS 系统 libiconv 保持既有 GBK 契约，拒绝无法编码的字符；iOS 的 Foundation 未提供本项目原先选用的 GBK 转换器，不能直接沿用 macOS 的 NSString 编码方式。
 
 iOS 支持系统文件备份导入导出、分享、阅读保持亮屏和后台音频。备份限定 UTF-8、4 MiB；Android 旧版目录导入仍仅在 Android 提供。iOS 启动时启用真实联网书库、离线缓存、账号和现有在线听书。
 
@@ -36,7 +36,7 @@ python scripts/probe_wenku_api.py
 
 ## IPA 构建
 
-在本 Fork 的 Actions 中手动运行 `iOS IPA`，对应 `.github/workflows/ios-ipa.yml`。工作流执行锁定依赖安装、静态检查、Flutter 测试、公开接口探测、模拟器原生测试，然后生成 arm64 release 应用。
+在本 Fork 的 Actions 中手动运行 `iOS IPA`，对应 `.github/workflows/ios-ipa.yml`。工作流执行锁定依赖安装、静态检查、Flutter 测试、公开接口探测、arm64 release 构建与打包，并继续执行模拟器原生测试和真实 Dart 通道测试。IPA 上传成功不代表后续模拟器测试已经通过，应以完整工作流结果为准。
 
 应用按 `Payload/Runner.app` 打包，保留框架符号链接，并检查 arm64、Flutter/App 框架、ZIP 完整性及 SHA-256。产物为 `Wenku8-0.2.3-ios-arm64-unsigned.ipa` 和 `SHA256SUMS.txt`，保留 30 天。
 

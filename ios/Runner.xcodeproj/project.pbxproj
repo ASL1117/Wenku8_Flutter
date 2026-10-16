@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		91B600012F00000300100001 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 91B600012F00000300100002 /* libiconv.tbd */; };
 		91B600012F00000200100001 /* Wenku8Bridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B600012F00000200100002 /* Wenku8Bridge.swift */; };
 		91B600012F00000100100001 /* LocalToolsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B600012F00000100100002 /* LocalToolsPlugin.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -43,6 +44,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		91B600012F00000300100002 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		91B600012F00000200100002 /* Wenku8Bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wenku8Bridge.swift; sourceTree = "<group>"; };
 		91B600012F00000100100002 /* LocalToolsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalToolsPlugin.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91B600012F00000300100001 /* libiconv.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

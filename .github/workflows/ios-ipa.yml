@@ -67,6 +67,7 @@ jobs:
           xcrun simctl list devices available -j > build/ios/devices.json
           device_id=$(python3 -c 'import json,re; devices=json.load(open("build/ios/devices.json"))["devices"]; choices=[(tuple(map(int,re.findall(r"\d+",runtime))),d["udid"]) for runtime,group in devices.items() for d in group if d["name"]=="iPhone 17 Pro Max"]; print(max(choices)[1])')
           echo "Selected simulator: $device_id"
+          echo "IOS_TEST_DEVICE=$device_id" >> "$GITHUB_ENV"
           flutter build ios --simulator --debug
           set +e
           xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "platform=iOS Simulator,id=$device_id" -destination-timeout 120 -parallel-testing-enabled NO -only-testing:RunnerTests -resultBundlePath build/ios/BridgeTests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- 2>&1 | tee build/ios/native-tests.log
@@ -75,7 +76,9 @@ jobs:
           tail -n 100 build/ios/native-tests.log
           xcrun xcresulttool get test-results summary --path build/ios/BridgeTests.xcresult | tee build/ios/native-test-summary.json || true
           test "$test_status" -eq 0
-          flutter test integration_test/api_probe_test.dart -d "$device_id" --plain-name '真实目录与章节正文可加载'
+      - name: Live Dart to iOS channel test
+        timeout-minutes: 15
+        run: flutter test integration_test/api_probe_test.dart -d "$IOS_TEST_DEVICE" --plain-name '真实目录与章节正文可加载'
       - name: Save native test diagnostics
         if: always()
         uses: actions/upload-artifact@v4

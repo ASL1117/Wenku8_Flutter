@@ -229,10 +229,19 @@ enum WenkuWire {
   }
 
   static func encodeReview(_ text: String) throws -> String {
-    let encoding = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(
-      CFStringEncoding(CFStringEncodings.GBK_95.rawValue)))
-    guard let bytes = text.data(using: encoding, allowLossyConversion: false),
-      String(data: bytes, encoding: encoding) == text else { throw WenkuError.reviewEncoding }
+    guard text.utf16.count <= 10_000 else { throw WenkuError.reviewEncoding }
+    if text.isEmpty { return "" }
+    let input = Data(text.utf8)
+    // GBK uses at most as many bytes as the same valid UTF-8 text.
+    var bytes = [UInt8](repeating: 0, count: input.count)
+    var length = bytes.count
+    let converted = input.withUnsafeBytes { source in
+      bytes.withUnsafeMutableBufferPointer { destination in
+        WenkuEncodeGBK(source.bindMemory(to: CChar.self).baseAddress!, input.count, destination.baseAddress!, &length)
+      }
+    }
+    guard converted != 0 else { throw WenkuError.reviewEncoding }
+    bytes.removeSubrange(length...)
     // java.net.URLEncoder's GBK form encoding, followed by UTF-8 Base64.
     let safe = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-*_".utf8)
     let encoded = bytes.map { byte -> String in

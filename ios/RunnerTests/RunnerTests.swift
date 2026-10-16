@@ -1,5 +1,4 @@
 import Flutter
-import CoreFoundation
 import Security
 import UIKit
 import XCTest
@@ -81,7 +80,6 @@ class RunnerTests: XCTestCase {
   }
 
   func testReviewChineseUsesGBKBytes() throws {
-    logGBKFixtureDiagnostics()
     let encoded = try WenkuWire.encodeReview("中文")
     XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
       "%D6%D0%CE%C4", "Chinese GBK byte mapping differs")
@@ -103,17 +101,18 @@ class RunnerTests: XCTestCase {
     XCTAssertThrowsError(try WenkuWire.encodeReview("😀"), "GBK must reject an unrepresentable emoji")
   }
 
-  private func logGBKFixtureDiagnostics() {
-    let cf = CFStringEncoding(CFStringEncodings.GBK_95.rawValue)
-    let ns = CFStringConvertEncodingToNSStringEncoding(cf)
-    let encoding = String.Encoding(rawValue: ns)
-    print("GBK fixture diagnostics: cf=\(cf) ns=\(ns) available=\(CFStringIsEncodingAvailable(cf))")
-    for fixture in ["中文", " +&~.-*_", "😀"] {
-      let bytes = fixture.data(using: encoding, allowLossyConversion: false)
-      let hex = bytes?.map { String(format: "%02X", $0) }.joined() ?? "nil"
-      let roundtrip = bytes.flatMap { String(data: $0, encoding: encoding) } == fixture
-      print("GBK fixed fixture scalars=\(fixture.unicodeScalars.map { String($0.value, radix: 16) }) hex=\(hex) roundtrip=\(roundtrip)")
-    }
+  func testReviewRetainsLegacyGBKMapping() throws {
+    let encoded = try WenkuWire.encodeReview("\u{2641}\u{E7C8}")
+    XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: encoded)), encoding: .utf8),
+      "%A8%92%A8%BF", "GBK byte mapping must not change to GB18030")
+  }
+
+  func testReviewEmptyAndBoundedInput() throws {
+    XCTAssertEqual(try WenkuWire.encodeReview(""), "")
+    let withNull = try WenkuWire.encodeReview("A\0中")
+    XCTAssertEqual(String(data: try XCTUnwrap(Data(base64Encoded: withNull)), encoding: .utf8), "A%00%D6%D0")
+    XCTAssertNoThrow(try WenkuWire.encodeReview(String(repeating: "中", count: 10_000)))
+    XCTAssertThrowsError(try WenkuWire.encodeReview(String(repeating: "中", count: 10_001)))
   }
 
   func testKeychainDeviceBoundFixtureStorage() throws {
