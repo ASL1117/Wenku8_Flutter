@@ -54,3 +54,13 @@ iOS 实测缺少 Foundation GBK 转换器，因此普通字符采用系统 `libi
 - [Android ICU windows-936-2000 官方映射](https://android.googlesource.com/platform/external/icu/+/refs/heads/main/icu4c/source/data/mappings/windows-936-2000.ucm)，映射数据来自 Unicode ICU，遵循 [Unicode 数据与软件许可](https://www.unicode.org/license.txt)。本次只使用映射事实及压缩数字范围。
 - [Apple libiconv GBK 定义](https://github.com/apple-oss-distributions/libiconv/blob/main/esdb/GB/GBK.src)及 [Apple GB2312 扩展映射](https://github.com/apple-oss-distributions/libiconv/blob/main/csmapper/GB/UCS%25GB2312EXT.src)，用于核对系统转换器行为，没有复制其实现代码。
 - [桌面 OpenJDK GBK 对照表](https://github.com/openjdk/jdk/blob/master/make/data/charsetmapping/GBK.map)，仅用于说明平台差异，未作为 Android 契约。
+
+## 2026-10-16 交付与验证记录
+
+- 构建源码：`6af6f7d`；[GitHub Actions 构建及验证记录](https://github.com/ASL1117/Wenku8_Flutter/actions/runs/38838696936)。
+- Flutter 静态检查、iPhone 17 Pro Max 横竖屏及本地功能测试通过；9 类真实只读接口探测通过。
+- iPhone 17 Pro Max / iOS 26.2 模拟器的 15 项原生测试全部通过，包含 GBK、Keychain、会话隔离、图片限制及真实公开接口。
+- Flutter 集成测试“真实目录与章节正文可加载”通过，覆盖 Dart → MethodChannel → Swift → URLSession → 真实列表、封面、详情、目录与正文。该测试不运行完整应用界面，不能替代真机完整使用验收。
+- 最终 IPA：`dist/ios/Wenku8-0.2.3-ios-arm64-unsigned.ipa`，28,764,046 字节；ZIP CRC、iPhoneOS 平台、Runner/App/Flutter 的 arm64 架构检查通过，不含 `libcpp.so`。
+- SHA-256：`cdf3252cbda64db4fbfb704476d1fecbe3e34eabe6288651754260d24f6f28a2`，同时保存于 `dist/ios/SHA256SUMS.txt`。
+- 未签名，需要自行重新签名安装；尚未执行真实 iPhone 安装、真实账号登录/写入、系统文件提供器和后台音频验收。
