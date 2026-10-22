@@ -1,21 +1,33 @@
 """Read-only smoke check for the public protocol used by the iOS bridge."""
 import base64
 import json
+import hashlib
+import hmac
 import time
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 
 
+def app_version(milliseconds):
+    # Protocol adaptation: YeXuanHs/novvera-app, a4b6032, GPL-3.0 (see NOTICE).
+    version, app_code = "1.29", "digital-bento"
+    message = f"{version}|{app_code}|{milliseconds // 60_000}".encode()
+    token = hmac.new(app_code.encode(), message, hashlib.sha256).hexdigest()[12:20]
+    return f"{version}-{app_code}-{token}"
+
+
 def request(action):
     # Preserve the legacy envelope: the service expects raw Base64, not a
     # second form-encoding pass. A descriptive client UA also avoids CF 1010.
-    body = ("&appver=1.13&request=" + base64.b64encode(action.encode()).decode()
-            + "&timetoken=" + str(time.time_ns() // 1_000_000)).encode()
+    milliseconds = time.time_ns() // 1_000_000
+    body = ("&appver=" + app_version(milliseconds)
+            + "&request=" + base64.b64encode(action.encode()).decode()
+            + "&timetoken=" + str(milliseconds)).encode()
     req = urllib.request.Request(
         "https://wenku8-relay.mewx.org/", body,
         {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-         "User-Agent": "Wenku8-Flutter/0.2.3"})
+         "User-Agent": "Wenku8-Flutter/0.2.4"})
     with urllib.request.urlopen(req, timeout=25) as response:
         assert response.status == 200
         result = response.read(8 * 1024 * 1024 + 1)
@@ -48,7 +60,7 @@ def main():
         f"action=search&searchtype=articlename&searchkey={search_key}&t=0"))
     assert search.tag == "result" and search.findall("item")
     # Do not log response text, account state, or request bodies.
-    print(json.dumps({"protocol": "1.13", "book_id": aid, "chapter_id": cid,
+    print(json.dumps({"protocol": "minute-hmac", "book_id": aid, "chapter_id": cid,
                       "list_items": len(listing.findall("item")),
                       "chapter_characters": len(body), "cover_bytes": len(cover),
                       "search_items": len(search.findall("item")),

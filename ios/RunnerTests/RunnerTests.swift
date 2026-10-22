@@ -74,10 +74,21 @@ class RunnerTests: XCTestCase {
     let request = WenkuWire.request(action: action, milliseconds: 123456789)
     XCTAssertEqual(request.httpMethod, "POST")
     XCTAssertEqual(request.url?.absoluteString, "https://wenku8-relay.mewx.org/")
-    XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "Wenku8-Flutter/0.2.3")
+    XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "Wenku8-Flutter/0.2.4")
     XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
-    let expected = "&appver=1.13&request=\(Data(action.utf8).base64EncodedString())&timetoken=123456789"
+    let expected = "&appver=1.29-digital-bento-896ac27d&request=\(Data(action.utf8).base64EncodedString())&timetoken=123456789"
     XCTAssertEqual(request.httpBody, Data(expected.utf8))
+  }
+
+  func testRelaySignatureChangesAtMinuteBoundary() throws {
+    let action = "action=novellist&sort=lastupdate&page=1&t=0"
+    // Fixed vectors calculated with Python's independent HMAC implementation.
+    for (milliseconds, signature) in [(Int64(0), "dd6b7b47"), (59_999, "dd6b7b47"), (60_000, "b29e09a7")] {
+      let request = WenkuWire.request(action: action, milliseconds: milliseconds)
+      let body = String(decoding: try XCTUnwrap(request.httpBody), as: UTF8.self)
+      XCTAssertTrue(body.hasPrefix("&appver=1.29-digital-bento-\(signature)&request="))
+      XCTAssertTrue(body.hasSuffix("&timetoken=\(milliseconds)"))
+    }
   }
 
   func testReviewChineseUsesGBKBytes() throws {

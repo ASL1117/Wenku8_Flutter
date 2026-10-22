@@ -4,7 +4,9 @@
 
 本分支主要适配 iPhone 17 Pro Max。iOS 使用 Swift `Wenku8Bridge` 对接现有 Flutter `legacy_api` 通道，不加载、修改或逆向 Android 的 `libcpp.so`。Android 保留原实现。
 
-服务端仍接受公开的旧版 POST 格式：`appver=1.13`、UTF-8 action 的 Base64 `request`、毫秒时间戳 `timetoken`。地址沿用 `https://wenku8-relay.mewx.org/`，客户端标识为 `Wenku8-Flutter/0.2.3`。已通过实际只读请求验证书目、分页、元数据、简介、目录、正文、封面、出版分类和中文搜索。第三方服务的协议和可用性取决于服务方。
+当前 POST 使用按分钟生成的 HMAC-SHA256 `appver`、UTF-8 action 的 Base64 `request`、毫秒时间戳 `timetoken`。签名与时间戳共用一次时钟采样，每次请求重新计算。2026-10-22 已复现旧版固定 `appver=1.13` 返回 HTTP 400，而动态签名请求返回正常数据；不再使用固定旧版本值。地址沿用 `https://wenku8-relay.mewx.org/`，客户端标识为 `Wenku8-Flutter/0.2.4`。实际只读验证覆盖书目、分页、元数据、简介、目录、正文、封面、出版分类和中文搜索。第三方服务的协议和可用性取决于服务方，设备时间需要准确。
+
+动态签名根据 [YeXuanHs/novvera-app 的公开 GPL-3.0 实现](https://github.com/YeXuanHs/novvera-app/blob/a4b603210c91595dc5a10134b56a047e56153fb6/lib/foundation/novel_backend/wenku8_client.dart) 适配，来源已记录在 `NOTICE`，没有读取或修改 Android 二进制。该实现属于第三方兼容协议依据，不能将其描述为服务方的官方接口文档。账号与 Cookie 处理保持原有隔离。
 
 账号 Cookie 只保存在原生层和设备绑定 Keychain，不进入 Dart、备份或日志。账号操作串行处理；公开浏览与图片请求不携带账号 Cookie。未使用真实账号验证登录、云书架写入和发帖。
 
@@ -38,7 +40,7 @@ python scripts/probe_wenku_api.py
 
 在本 Fork 的 Actions 中手动运行 `iOS IPA`，对应 `.github/workflows/ios-ipa.yml`。工作流执行锁定依赖安装、静态检查、Flutter 测试、公开接口探测、arm64 release 构建与打包，并继续执行模拟器原生测试和真实 Dart 通道测试。IPA 上传成功不代表后续模拟器测试已经通过，应以完整工作流结果为准。
 
-应用按 `Payload/Runner.app` 打包，保留框架符号链接，并检查 arm64、Flutter/App 框架、ZIP 完整性及 SHA-256。产物为 `Wenku8-0.2.3-ios-arm64-unsigned.ipa` 和 `SHA256SUMS.txt`，保留 30 天。
+应用按 `Payload/Runner.app` 打包，保留框架符号链接，并检查 arm64、Flutter/App 框架、ZIP 完整性及 SHA-256。当前修复版产物为 `Wenku8-0.2.4-ios-arm64-unsigned.ipa` 和 `SHA256SUMS.txt`，保留 30 天。
 
 这是未签名 IPA，需要由 SideStore、AltStore 或 Sideloadly 使用自己的 Apple 账号重新签名后安装。无需把 Apple 密码、验证码或证书发到聊天中。生成 IPA 不代表已通过真实 iPhone 安装验收。
 

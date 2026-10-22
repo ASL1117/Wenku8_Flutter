@@ -27,7 +27,7 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: flutter analyze
       - name: Flutter tests including iPhone 17 Pro Max layouts
-        run: flutter test test/adaptive_ui_test.dart test/feature_unification_ui_test.dart
+        run: flutter test test/adaptive_ui_test.dart test/feature_unification_ui_test.dart test/legacy_transport_error_test.dart
       - name: Live read-only API probe
         run: python3 scripts/probe_wenku_api.py
       - name: Build arm64 device app
@@ -46,9 +46,9 @@ jobs:
           mkdir -p dist/ios/Payload
           cp -R "$app_path" dist/ios/Payload/
           cd dist/ios
-          zip -q -r -y Wenku8-0.2.3-ios-arm64-unsigned.ipa Payload
-          unzip -tq Wenku8-0.2.3-ios-arm64-unsigned.ipa
-          shasum -a 256 Wenku8-0.2.3-ios-arm64-unsigned.ipa > SHA256SUMS.txt
+          zip -q -r -y Wenku8-0.2.4-ios-arm64-unsigned.ipa Payload
+          unzip -tq Wenku8-0.2.4-ios-arm64-unsigned.ipa
+          shasum -a 256 Wenku8-0.2.4-ios-arm64-unsigned.ipa > SHA256SUMS.txt
           /usr/libexec/PlistBuddy -c Print Payload/Runner.app/Info.plist
       - uses: actions/upload-artifact@v4
         with:

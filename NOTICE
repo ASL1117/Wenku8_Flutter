@@ -6,6 +6,13 @@ Keychain session storage, iOS file/share/idle-timer integration, background
 audio configuration, iPhone 17 Pro Max layout coverage and unsigned IPA CI.
 The iOS implementation does not load or modify the Android JNI runtime.
 
+iOS relay signature fix, 2026-10-22:
+Minute-bound appver HMAC protocol adapted to Swift and the Python API probe
+from YeXuanHs/novvera-app, lib/foundation/novel_backend/wenku8_client.dart,
+commit a4b603210c91595dc5a10134b56a047e56153fb6 (GNU GPL version 3).
+https://github.com/YeXuanHs/novvera-app
+Full license: assets/licenses/GPL-3.0.txt.
+
 Based on MewX/light-novel-library_Wenku8_Android and its contributors.
 https://github.com/MewX/light-novel-library_Wenku8_Android
 

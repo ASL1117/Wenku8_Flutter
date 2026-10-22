@@ -52,6 +52,14 @@ final class Wenku8Bridge: NSObject, FlutterPlugin {
         DispatchQueue.main.async {
           result(FlutterError(code: "REVIEW_ENCODING", message: "Characters outside the review encoding", details: nil))
         }
+      } catch WenkuError.httpStatus(let status) {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "LEGACY_API_HTTP", message: "Service rejected the request", details: status))
+        }
+      } catch let error as URLError {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "LEGACY_API_NETWORK", message: "Network request failed", details: error.code.rawValue))
+        }
       } catch {
         // Never return or log actions, credentials, cookies or transport exceptions.
         DispatchQueue.main.async {
@@ -139,7 +147,7 @@ final class Wenku8Bridge: NSObject, FlutterPlugin {
     var request = WenkuWire.request(action: action)
     if let cookie = cookie { request.setValue("PHPSESSID=\(cookie)", forHTTPHeaderField: "Cookie") }
     let reply = try WenkuDownload.fetch(request)
-    guard (200...299).contains(reply.response.statusCode) else { throw WenkuError.invalid }
+    guard (200...299).contains(reply.response.statusCode) else { throw WenkuError.httpStatus(reply.response.statusCode) }
     return (reply.data, WenkuWire.sessionCookie(reply.response))
   }
 
@@ -200,10 +208,22 @@ final class Wenku8Bridge: NSObject, FlutterPlugin {
   }
 }
 
-enum WenkuError: Error { case invalid, reviewEncoding }
+enum WenkuError: Error { case invalid, reviewEncoding, httpStatus(Int) }
 
 enum WenkuWire {
-  static let userAgent = "Wenku8-Flutter/0.2.3"
+  static let userAgent = "Wenku8-Flutter/0.2.4"
+
+  // Protocol adaptation from YeXuanHs/novvera-app (GPL-3.0), commit a4b6032.
+  // The relay rejects a plain version: its appver includes a minute-bound HMAC.
+  private static func appVersion(milliseconds: Int64) -> String {
+    let version = "1.29"
+    let appCode = "digital-bento"
+    let message = Data("\(version)|\(appCode)|\(milliseconds / 60_000)".utf8)
+    let digest = HMAC<SHA256>.authenticationCode(for: message,
+      using: SymmetricKey(data: Data(appCode.utf8)))
+    let hex = digest.map { String(format: "%02x", $0) }.joined()
+    return "\(version)-\(appCode)-\(hex.dropFirst(12).prefix(8))"
+  }
 
   static func request(action: String, milliseconds: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) -> URLRequest {
     var request = URLRequest(url: URL(string: "https://wenku8-relay.mewx.org/")!)
@@ -212,7 +232,8 @@ enum WenkuWire {
     request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
     // Keep the legacy relay's Base64 field verbatim, matching its published clients.
     let encoded = Data(action.utf8).base64EncodedString()
-    request.httpBody = Data("&appver=1.13&request=\(encoded)&timetoken=\(milliseconds)".utf8)
+    // Use one clock sample for both fields, including requests at a minute boundary.
+    request.httpBody = Data("&appver=\(appVersion(milliseconds: milliseconds))&request=\(encoded)&timetoken=\(milliseconds)".utf8)
     return request
   }
 
@@ -425,6 +446,7 @@ private final class WenkuDownload: NSObject, URLSessionDataDelegate {
   private var data = Data()
   private var response: HTTPURLResponse?
   private var failed = false
+  private var transportError: Error?
 
   static func fetch(_ request: URLRequest) throws -> (data: Data, response: HTTPURLResponse) {
     let delegate = WenkuDownload()
@@ -438,8 +460,9 @@ private final class WenkuDownload: NSObject, URLSessionDataDelegate {
     let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     defer { session.invalidateAndCancel() }
     session.dataTask(with: request).resume()
-    guard delegate.completed.wait(timeout: .now() + 35) == .success,
-      !delegate.failed, let response = delegate.response else { throw WenkuError.invalid }
+    guard delegate.completed.wait(timeout: .now() + 35) == .success else { throw URLError(.timedOut) }
+    if let error = delegate.transportError { throw error }
+    guard !delegate.failed, let response = delegate.response else { throw WenkuError.invalid }
     return (delegate.data, response)
   }
 
@@ -470,7 +493,7 @@ private final class WenkuDownload: NSObject, URLSessionDataDelegate {
   }
 
   func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-    if error != nil { failed = true }
+    transportError = error
     completed.signal()
   }
 }

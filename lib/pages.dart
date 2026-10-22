@@ -605,10 +605,16 @@ class DiscoverPage extends StatelessWidget {
     if (books.isEmpty && feed?.loading == true) {
       body = LibrarySkeleton(header: _categoryHeader(context));
     } else if (books.isEmpty && feed?.error != null) {
+      final error = feed!.error;
+      final message =
+          Theme.of(context).platform == TargetPlatform.iOS &&
+              error is FormatException
+          ? '${error.message}\n已保存的书架与阅读记录仍保留。'
+          : '检查网络后再试，已保存的书架与阅读记录仍保留。';
       body = ContentNotice(
         icon: CupertinoIcons.wifi_exclamationmark,
         title: '书籍加载失败',
-        message: '检查网络后再试，已保存的书架与阅读记录仍保留。',
+        message: message,
         onRetry: feed!.retry,
       );
     } else {
