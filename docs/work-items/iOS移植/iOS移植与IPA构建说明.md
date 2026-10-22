@@ -66,3 +66,13 @@ iOS 实测缺少 Foundation GBK 转换器，因此普通字符采用系统 `libi
 - 最终 IPA：`dist/ios/Wenku8-0.2.3-ios-arm64-unsigned.ipa`，28,764,046 字节；ZIP CRC、iPhoneOS 平台、Runner/App/Flutter 的 arm64 架构检查通过，不含 `libcpp.so`。
 - SHA-256：`cdf3252cbda64db4fbfb704476d1fecbe3e34eabe6288651754260d24f6f28a2`，同时保存于 `dist/ios/SHA256SUMS.txt`。
 - 未签名，需要自行重新签名安装；尚未执行真实 iPhone 安装、真实账号登录/写入、系统文件提供器和后台音频验收。
+
+## 2026-10-22 联网修复版 0.2.4+6
+
+- 已复现：旧版固定 `appver=1.13` 在直连与代理环境均返回 HTTP 400；补上动态校验后，相同地址、请求内容及原有客户端标识返回正常数据。
+- 修复签名随请求重新生成，使用同一个毫秒时间戳派生分钟桶和 `timetoken`，并验证分钟切换边界。保持 HTTPS，不增加明文 HTTP 降级或自动重发账号写入。
+- 区分原生 HTTP 状态与系统网络错误，只将固定安全提示传入界面，不输出响应正文、Cookie 或底层请求信息。iOS 发现页显示具体原因，保留重试入口及本地资料提示。
+- 源码：`9c7590f`；[iOS 构建与验证记录](https://github.com/ASL1117/Wenku8_Flutter/actions/runs/39710189510)、[完整 Flutter/Android 回归](https://github.com/ASL1117/Wenku8_Flutter/actions/runs/39710189180)。静态检查、40 项针对性测试、16 项 iOS 原生测试、9 类真实只读接口及 Flutter → iOS → 真实目录/正文联调均通过。直连无代理的书目请求也已验证。
+- 安装包：`dist/ios/0.2.4-network-fix/Wenku8-0.2.4-ios-arm64-unsigned.ipa`，28,769,310 字节，版本 0.2.4、构建号 6；ZIP CRC、iPhoneOS、arm64 框架与 SHA-256 检查通过。
+- SHA-256：`e17a2fa9b98a9a2b4ff316d16ece9a2614fc18ff2da25895a8ec4639c9b845c7`；同目录有 `SHA256SUMS.txt`。
+- 按之前的方式重新签名安装 0.2.4，再检查发现页、搜索与章节阅读。若仍失败，请记录新版的完整提示；模拟器验证不能替代手机端验收，真实账号写入仍未验证。
