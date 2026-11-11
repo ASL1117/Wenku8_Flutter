@@ -1,0 +1,59 @@
+name: iOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: stable
+          cache: true
+      - name: Toolchain and locked dependencies
+        run: |
+          xcodebuild -version
+          flutter --version
+          flutter pub get --enforce-lockfile
+      - run: flutter analyze
+      - name: Build latest public source for iPhone
+        run: flutter build ios --release --no-codesign
+      - name: Package and verify unsigned IPA
+        run: |
+          set -euo pipefail
+          app_path="$PWD/build/ios/iphoneos/Runner.app"
+          xcrun lipo "$app_path/Runner" -verify_arch arm64
+          test -d "$app_path/Frameworks/App.framework"
+          test -d "$app_path/Frameworks/Flutter.framework"
+          test -d "$app_path/PlugIns/ReadingWidgets.appex"
+          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app_path/Info.plist")
+          build=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$app_path/Info.plist")
+          mkdir -p dist/ios/Payload
+          cp -R "$app_path" dist/ios/Payload/
+          cd dist/ios
+          package="Wenku8-${version}-build${build}-ios-public-source-unsigned.ipa"
+          zip -q -r -y "$package" Payload
+          unzip -tq "$package"
+          shasum -a 256 "$package" > SHA256SUMS.txt
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD > SOURCE_COMMIT.txt
+          /usr/libexec/PlistBuddy -c Print Payload/Runner.app/Info.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wenku8-ios-arm64-unsigned
+          path: |
+            dist/ios/*.ipa
+            dist/ios/SHA256SUMS.txt
+            dist/ios/SOURCE_COMMIT.txt
+          if-no-files-found: error
+          retention-days: 30
