@@ -6,7 +6,7 @@
 
 本 Fork 增加 iOS 联网实现与 iPhone 17 Pro Max 适配；见 [iOS 移植与 IPA 构建说明](docs/work-items/iOS移植/iOS移植与IPA构建说明.md)。
 
-<p align="center">基于 Flutter 的 Android 轻小说阅读客户端</p>
+<p align="center">基于 Flutter 的 iOS 轻小说阅读客户端</p>
 
 <p align="center">
   <a href="https://github.com/mikufoxxx/Wenku8_Flutter/releases"><img src="https://img.shields.io/github/v/release/mikufoxxx/Wenku8_Flutter?style=flat-square&color=60786B" alt="Release" /></a>
@@ -24,7 +24,7 @@
 
 ## 简介
 
-Wenku8 Flutter 是轻小说文库客户端的 Flutter 重构版本，面向 Android，集成书籍发现、书架管理、阅读、离线缓存与在线听书。界面采用半透明材质与档案式排版，提供立体书架、连贯的页面过渡和可自定义的阅读体验。
+Wenku8 Flutter 是轻小说文库客户端的 Flutter 重构版本，面向 iOS，集成书籍发现、书架管理、阅读、离线缓存与在线听书。界面采用半透明材质与档案式排版，提供立体书架、连贯的页面过渡和可自定义的阅读体验。
 
 ## 界面预览
 
