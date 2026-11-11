@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 def app_version(milliseconds):
     # Protocol adaptation: YeXuanHs/novvera-app, a4b6032, GPL-3.0 (see NOTICE).
-    version, app_code = "1.29", "digital-bento"
+    version, app_code = "1.30", "digital-bento"
     message = f"{version}|{app_code}|{milliseconds // 60_000}".encode()
     token = hmac.new(app_code.encode(), message, hashlib.sha256).hexdigest()[12:20]
     return f"{version}-{app_code}-{token}"
@@ -27,7 +27,7 @@ def request(action):
     req = urllib.request.Request(
         "https://wenku8-relay.mewx.org/", body,
         {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-         "User-Agent": "Wenku8-Flutter/0.2.4"})
+         "User-Agent": "Wenku8-Flutter/0.2.5"})
     with urllib.request.urlopen(req, timeout=25) as response:
         assert response.status == 200
         result = response.read(8 * 1024 * 1024 + 1)

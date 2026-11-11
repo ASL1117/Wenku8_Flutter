@@ -46,9 +46,9 @@ jobs:
           mkdir -p dist/ios/Payload
           cp -R "$app_path" dist/ios/Payload/
           cd dist/ios
-          zip -q -r -y Wenku8-0.2.4-ios-arm64-unsigned.ipa Payload
-          unzip -tq Wenku8-0.2.4-ios-arm64-unsigned.ipa
-          shasum -a 256 Wenku8-0.2.4-ios-arm64-unsigned.ipa > SHA256SUMS.txt
+          zip -q -r -y Wenku8-0.2.5-ios-arm64-unsigned.ipa Payload
+          unzip -tq Wenku8-0.2.5-ios-arm64-unsigned.ipa
+          shasum -a 256 Wenku8-0.2.5-ios-arm64-unsigned.ipa > SHA256SUMS.txt
           /usr/libexec/PlistBuddy -c Print Payload/Runner.app/Info.plist
       - uses: actions/upload-artifact@v4
         with:

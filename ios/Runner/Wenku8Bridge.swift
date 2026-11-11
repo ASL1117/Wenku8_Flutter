@@ -211,12 +211,12 @@ final class Wenku8Bridge: NSObject, FlutterPlugin {
 enum WenkuError: Error { case invalid, reviewEncoding, httpStatus(Int) }
 
 enum WenkuWire {
-  static let userAgent = "Wenku8-Flutter/0.2.4"
+  static let userAgent = "Wenku8-Flutter/0.2.5"
 
   // Protocol adaptation from YeXuanHs/novvera-app (GPL-3.0), commit a4b6032.
   // The relay rejects a plain version: its appver includes a minute-bound HMAC.
   private static func appVersion(milliseconds: Int64) -> String {
-    let version = "1.29"
+    let version = "1.30"
     let appCode = "digital-bento"
     let message = Data("\(version)|\(appCode)|\(milliseconds / 60_000)".utf8)
     let digest = HMAC<SHA256>.authenticationCode(for: message,
