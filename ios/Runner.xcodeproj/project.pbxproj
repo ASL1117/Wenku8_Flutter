@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B81700010000000000000001 /* Wenku8Bridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81700020000000000000001; };
+		B81700010000000000000002 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = B81700020000000000000002; };
 		0BCFBA33B110A395313BA57F /* ReadingWidgets.appex in Embed Reading Widgets */ = {isa = PBXBuildFile; fileRef = 2D7AE459372DD96C3F705137 /* ReadingWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0FB113618772A4F84AC5E14B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A95A0D45821706F0122C8E77 /* Pods_Runner.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -89,6 +91,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B81700020000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wenku8Bridge.swift; sourceTree = "<group>"; };
+		B81700020000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.text-based-dylib-definition; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = DERIVED_FILE_DIR; };
 		1DDECF5C56E0A28BF875C84E /* ReadingWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = ReadingWidgets.entitlements; sourceTree = "<group>"; };
@@ -156,6 +160,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FB113618772A4F84AC5E14B /* Pods_Runner.framework in Frameworks */,
+				B81700010000000000000002,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -250,6 +255,7 @@
 				A014F0020000000000000004 /* NativeLocalToolsPlugin.swift */,
 				A11800020000000000000001 /* PhotoLibraryImageSaver.swift */,
 				A014F0020000000000000005 /* NativeNetworkPlugin.swift */,
+				B81700020000000000000001,
 				A014F0020000000000000006 /* NativeSecureRecord.swift */,
 				A014F0020000000000000007 /* NativeSystemSpeechPlugin.swift */,
 				A014F0020000000000000008 /* NativeLanDiscoveryPlugin.swift */,
@@ -278,6 +284,7 @@
 			isa = PBXGroup;
 			children = (
 				A95A0D45821706F0122C8E77 /* Pods_Runner.framework */,
+				B81700020000000000000002,
 				B21787EE36B4AB99BE16F2F3 /* iOS */,
 			);
 			name = Frameworks;
@@ -521,6 +528,7 @@
 				A014F0010000000000000004 /* NativeLocalToolsPlugin.swift in Sources */,
 				A11800010000000000000001 /* PhotoLibraryImageSaver.swift in Sources */,
 				A014F0010000000000000005 /* NativeNetworkPlugin.swift in Sources */,
+				B81700010000000000000001,
 				A014F0010000000000000006 /* NativeSecureRecord.swift in Sources */,
 				A014F0010000000000000007 /* NativeSystemSpeechPlugin.swift in Sources */,
 				A014F0010000000000000008 /* NativeLanDiscoveryPlugin.swift in Sources */,

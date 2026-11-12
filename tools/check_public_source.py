@@ -33,6 +33,18 @@ PRIVATE_COMPONENT_FILES = {
 PRIVATE_COMPONENT_DIRS = {'tools/content-gateway', 'android/app/src/main/java/org/mewx/wenku8/api', 'studio-android'}
 LOCAL_ONLY_PARTS = {'test', 'tests', 'integration_test', 'test_driver', 'androidTest', 'ohosTest', 'RunnerTests', 'RunnerDocumentUITests'}
 LOCAL_ONLY_NAMES = {'AGENTS.md', 'error_log.dart', 'error_diagnostics.dart', 'diagnostic_cipher.dart', 'network_diagnostics.dart', 'performance_diagnostics.dart', 'troubleshooting_page.dart', 'DiagnosticEnvironment.kt', 'AppStorageSnapshot.kt', 'AppStorageSnapshot.swift'}
+# This fork publishes its own GPL-compatible iOS adapter and its reviewed tests.
+# Keep upstream private binaries, unknown connectivity files and secret checks blocked.
+FORK_PUBLIC_ONLINE = {
+    'ios/Runner/Wenku8Bridge.swift', 'lib/legacy_transport.dart',
+    'lib/legacy_wenku_repository.dart', 'lib/legacy_cover.dart',
+    'lib/wenku_account.dart', 'lib/wenku_reviews.dart',
+}
+
+def fork_test_path(relative):
+    return (relative.parent.as_posix() in {'test', 'integration_test'} and
+            relative.name.startswith('fork_') and relative.name.endswith('_test.dart'))
+
 CONNECTIVITY_PATTERNS = {
     'restricted native binding': re.compile(r'getMagicVersion' + r'Cpp|System[.]loadLibrary\([\s\S]{0,40}[\"\']cpp[\"\']'),
     'restricted platform channel': re.compile(r'org[.]mewx[.]wenku8/' + r'legacy_api'),
@@ -63,7 +75,7 @@ PATTERNS = {
 def inspect(root: Path, files=None, *, require_manifest=False) -> list[str]:
     issues = []
     manifest = root / 'tools/public-source-files.txt'
-    allowed = set(manifest.read_text().splitlines()) if manifest.is_file() else None
+    allowed = set(manifest.read_text(encoding='utf-8').splitlines()) if manifest.is_file() else None
     if require_manifest and allowed is None:
         issues.append('Source inventory is required')
     for file in sorted(root.rglob('*') if files is None else files):
@@ -75,7 +87,7 @@ def inspect(root: Path, files=None, *, require_manifest=False) -> list[str]:
             continue
         if not file.is_file():
             continue
-        if (any(part in LOCAL_ONLY_PARTS for part in relative.parts) or
+        if not fork_test_path(relative) and (any(part in LOCAL_ONLY_PARTS for part in relative.parts) or
                 file.name in LOCAL_ONLY_NAMES or file.name.startswith(('test_', '._')) or
                 re.search(r'(?:_test[.]|[.]test[.]|Tests[.]|Test[.])', file.name)):
             issues.append(f'{relative}: local-only test or development material')
@@ -98,7 +110,7 @@ def inspect(root: Path, files=None, *, require_manifest=False) -> list[str]:
         except (UnicodeDecodeError, ValueError):
             continue
         for name, pattern in CONNECTIVITY_PATTERNS.items():
-            if pattern.search(text):
+            if pattern.search(text) and relative.as_posix() not in FORK_PUBLIC_ONLINE:
                 issues.append(f'{relative}: {name}')
         for name, pattern in PATTERNS.items():
             scanned = text

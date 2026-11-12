@@ -18,7 +18,8 @@ abstract final class LocalPlatform {
   static bool get website => ios || harmony;
   static bool get readerAppearance => android || ios || harmony;
   static bool get listening => android || ios || harmony;
-  static bool get nearbyReading => android || ios || harmony;
+  // The omitted upstream pairing protocol is not implemented by this fork.
+  static bool get nearbyReading => false;
   static bool get fileActions => android || ios || harmony;
   static bool get storageDiagnostics => android || ios || harmony;
   static bool get volumePaging => android || harmony;

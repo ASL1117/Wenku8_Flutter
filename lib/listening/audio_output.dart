@@ -14,12 +14,18 @@ import 'models.dart';
 /// Both online MP3 and system-generated WAV use the same hardware audio player.
 /// No TTS speak()/stop() simulation: pause and seek preserve the exact audio position.
 class NativeListeningOutput implements ListeningAudioOutput {
-  NativeListeningOutput(this.controller);
+  NativeListeningOutput(this.controller)
+    : _player = AudioPlayer(
+        audioPipeline: AudioPipeline(
+          androidAudioEffects: controller.enhancement.supported
+              ? [controller.enhancement.effect]
+              : [],
+        ),
+        handleInterruptions: false,
+        handleAudioSessionActivation: false,
+      );
   final ListeningController controller;
-  final _player = AudioPlayer(
-    handleInterruptions: false,
-    handleAudioSessionActivation: false,
-  );
+  final AudioPlayer _player;
   final _completed = StreamController<void>.broadcast();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   AudioSession? _session;

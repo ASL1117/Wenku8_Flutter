@@ -101,7 +101,6 @@ import 'reader_annotations.dart';
 import 'reader_annotation_editor.dart';
 import 'reader_embedded_vertical.dart';
 import 'lan_reading_sync.dart';
-import 'lan_reading_page.dart';
 import 'reader_pagination.dart';
 import 'reader_paged_view.dart';
 import 'reader_vertical_text.dart';
@@ -3072,21 +3071,14 @@ class SettingsPage extends StatelessWidget {
             options: _effectsOptions,
           ),
           const SizedBox(height: 14),
-          if (LanSyncScope.maybeOf(context) case final sync?) ...[
-            FeatureEntry(
-              key: const ValueKey('settings-lan-sync'),
-              title: '局域网续读',
-              subtitle: '连接自己的设备，接着上次的位置阅读',
-              icon: CupertinoIcons.wifi,
-              onTap: () => pushNovelPage<void>(
-                context,
-                LanReadingPage(sync: sync, reduceMotion: state.reduceMotion),
-                reduceMotion: state.reduceMotion,
-                slot: ('settings', 'lan-reading'),
-              ),
-            ),
-            const SizedBox(height: 14),
-          ],
+          FeatureEntry(
+            key: const ValueKey('settings-lan-unavailable'),
+            title: '跨设备接力（暂不可用）',
+            subtitle: '当前 Fork 不含上游配对与加密协议',
+            icon: CupertinoIcons.wifi_slash,
+            onTap: () => showNovelFeedback(context, '请使用备份导入导出迁移阅读资料'),
+          ),
+          const SizedBox(height: 14),
           FeatureEntry(
             key: const ValueKey('settings-reading-widgets'),
             title: '小组件',

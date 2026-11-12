@@ -231,6 +231,25 @@ final class NativeLibraryPlugin: NSObject, FlutterPlugin, UIDocumentPickerDelega
       }
       return try conversion.extractKindle(path, output: output)
     case "prepareBook", "prepareLinkedDocument":
+      if (args["name"] as? String ?? "").lowercased().hasSuffix(".rtf") {
+        guard let path = args["path"] as? String else {
+          throw BookDocumentFailure(code: "conversion_path", message: "缺少 RTF 文件")
+        }
+        let source = try store().readableSourceURL(path)
+        let size = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size > 0 && size <= BookImportFormatPolicy.byteLimit("rtf") else {
+          throw BookDocumentFailure(code: "file_too_large", message: "RTF 文件为空或超过 128 MiB")
+        }
+        let content = try NSAttributedString(data: Data(contentsOf: source),
+          options: [.documentType: NSAttributedString.DocumentType.rtf], documentAttributes: nil).string
+        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+          throw BookDocumentFailure(code: "conversion_empty", message: "RTF 中没有可读取的文字")
+        }
+        let name = URL(fileURLWithPath: args["name"] as? String ?? "导入.rtf")
+          .deletingPathExtension().lastPathComponent + ".txt"
+        let converted = try store().create(Data(content.utf8), name: name, preserveName: true)
+        return [["name": name, "path": converted.path]]
+      }
       if (args["name"] as? String ?? "").lowercased().hasSuffix(".doc") {
         throw BookDocumentFailure(code: "format_unavailable", message: "此设备暂不支持二进制 DOC，请将原文件另存为 DOCX、RTF 或 EPUB 后导入")
       }

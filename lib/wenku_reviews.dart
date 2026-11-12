@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'online_component.dart';
+import 'legacy_transport.dart';
+import 'wenku_account.dart';
+import 'package:xml/xml.dart';
 
 class WenkuReview {
   const WenkuReview({
@@ -23,7 +26,57 @@ class WenkuReviewPage {
   const WenkuReviewPage(this.items, this.totalPages);
   final List<WenkuReview> items;
   final int totalPages;
+  static Future<WenkuReviewPage> parseAsync(
+    String source, {
+    bool replies = false,
+  }) async => source.length < 8192
+      ? parse(source, replies: replies)
+      : compute(_parseReviewPage, (source, replies));
+  static WenkuReviewPage parse(String source, {bool replies = false}) {
+    final code = wenkuResponseCode(source);
+    if (code != null) throw WenkuApiError(code);
+    final root = XmlDocument.parse(source).rootElement;
+    if (!{'result', 'metadata'}.contains(root.name.local)) {
+      throw const FormatException('书评列表格式有误');
+    }
+    final total = int.tryParse(
+      root.getElement('page')?.getAttribute('num') ?? '',
+    );
+    if (total == null || total < 0) throw const FormatException('书评页数格式有误');
+    final seen = <String>{};
+    final items = <WenkuReview>[];
+    for (final item in root.findElements('item')) {
+      final id = int.tryParse(item.getAttribute('rid') ?? '') ?? 0;
+      final user = item.getElement('user');
+      final rawContent = item.getElement('content')?.innerText.trim() ?? '';
+      final title = replies
+          ? ''
+          : item.getElement('title')?.innerText.trim() ?? rawContent;
+      final content = replies ? rawContent : '';
+      if ((!replies && (id <= 0 || title.isEmpty)) ||
+          (replies && content.isEmpty)) {
+        continue;
+      }
+      final review = WenkuReview(
+        id: id,
+        user: user?.innerText.trim() ?? '',
+        userId: int.tryParse(user?.getAttribute('uid') ?? '') ?? 0,
+        title: title,
+        content: content,
+        timestamp: item.getAttribute(replies ? 'timestamp' : 'posttime') ?? '',
+        replies: int.tryParse(item.getAttribute('replies') ?? '') ?? 0,
+      );
+      if (seen.add(review.identity)) items.add(review);
+    }
+    if (root.findElements('item').isNotEmpty && items.isEmpty) {
+      throw const FormatException('书评内容格式有误');
+    }
+    return WenkuReviewPage(List.unmodifiable(items), total);
+  }
 }
+
+WenkuReviewPage _parseReviewPage((String, bool) source) =>
+    WenkuReviewPage.parse(source.$1, replies: source.$2);
 
 typedef ReviewPageReader =
     Future<WenkuReviewPage> Function(int id, int page, bool replies);
@@ -33,7 +86,21 @@ class WenkuReviewFeed extends ChangeNotifier {
     required this.id,
     this.replies = false,
     ReviewPageReader? read,
-  }) : _read = read ?? ((_, _, _) => unavailableOnline());
+  }) : _read = read ?? _readRelay;
+  static Future<WenkuReviewPage> _readRelay(
+    int id,
+    int page,
+    bool replies,
+  ) async {
+    final action = replies
+        ? 'action=review&do=show&rid=$id&page=$page&t=0'
+        : 'action=review&do=list&aid=$id&page=$page&t=0';
+    return WenkuReviewPage.parseAsync(
+      await LegacyTransport.sessionRead(action),
+      replies: replies,
+    );
+  }
+
   final int id;
   final bool replies;
   final ReviewPageReader _read;
@@ -72,8 +139,10 @@ class WenkuReviewFeed extends ChangeNotifier {
       if (_disposed || generation != _generation) return;
       error = failure is OnlineComponentUnavailable
           ? failure.toString()
-          : '暂时无法读取书评，请稍后重试';
-      requiresLogin = failure is OnlineAuthenticationRequired;
+          : WenkuAccount.describeError(failure);
+      requiresLogin =
+          failure is OnlineAuthenticationRequired ||
+          (failure is WenkuApiError && failure.code == 4);
       _failedRefresh = refresh;
     } finally {
       if (!_disposed && generation == _generation) {

@@ -240,6 +240,19 @@ assets/reading_art/signal-110.png
 assets/reading_art/signal-110.webp
 assets/reading_art/signal-117.png
 assets/reading_art/signal-117.webp
+assets/reading_previews/archive-117.webp
+assets/reading_previews/constellation-117.webp
+assets/reading_previews/editorial-117.webp
+assets/reading_previews/festival-117.webp
+assets/reading_previews/ink-117.webp
+assets/reading_previews/score-117.webp
+assets/reading_previews/shelf-117.webp
+assets/reading_previews/signal-117.webp
+assets/report/README.txt
+assets/report/season_autumn.webp
+assets/report/season_spring.webp
+assets/report/season_summer.webp
+assets/report/season_winter.webp
 assets/tokenizer/jieba-1.0.1.dgz
 docs/CLOUD_IMPORT.md
 docs/HAPTICS.md
@@ -268,6 +281,8 @@ docs/images/sponsor-en-dark.svg
 docs/images/sponsor-en-light.svg
 docs/images/sponsor-zh-dark.svg
 docs/images/sponsor-zh-light.svg
+docs/work-items/iOS移植/Fork修复构建与发布说明.md
+integration_test/fork_online_smoke_test.dart
 ios/.gitignore
 ios/Flutter/AppFrameworkInfo.plist
 ios/Flutter/Debug.xcconfig
@@ -342,15 +357,19 @@ ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png
 ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md
 ios/Runner/Base.lproj/LaunchScreen.storyboard
 ios/Runner/Base.lproj/Main.storyboard
+ios/Runner/BookFolderScanner.swift
 ios/Runner/BookSyncDocument.swift
 ios/Runner/Info.plist
 ios/Runner/LibraryExportPolicy.swift
 ios/Runner/LinkedBookDocuments.swift
 ios/Runner/ManagedBookDocuments.swift
+ios/Runner/NativeBookConversion.swift
 ios/Runner/NativeFrameRatePlugin.swift
+ios/Runner/NativeLanDiscoveryPlugin.swift
 ios/Runner/NativeLibraryPlugin.swift
 ios/Runner/NativeLocalToolsPlugin.swift
 ios/Runner/NativeNetworkPlugin.swift
+ios/Runner/NativePdfImport.swift
 ios/Runner/NativeSecureRecord.swift
 ios/Runner/NativeSystemSpeechPlugin.swift
 ios/Runner/PhotoLibraryImageSaver.swift
@@ -358,6 +377,7 @@ ios/Runner/ReadingWidgets.entitlements
 ios/Runner/ReadingWidgetsPlugin.swift
 ios/Runner/Runner-Bridging-Header.h
 ios/Runner/SceneDelegate.swift
+ios/Runner/Wenku8Bridge.swift
 lib/app_haptics.dart
 lib/app_interactions.dart
 lib/app_language.dart
@@ -451,6 +471,9 @@ lib/harmony_gallery_save_button.dart
 lib/home_navigation.dart
 lib/illustration_layout_page.dart
 lib/illustration_placement.dart
+lib/lan_handoff_widgets.dart
+lib/lan_reading_page.dart
+lib/lan_reading_sync.dart
 lib/legacy_cover.dart
 lib/legacy_import.dart
 lib/legacy_import_page.dart
@@ -466,8 +489,12 @@ lib/library_workspace.dart
 lib/listening/audio_output.dart
 lib/listening/cache.dart
 lib/listening/controller.dart
+lib/listening/custom_tts.dart
+lib/listening/custom_tts_page.dart
 lib/listening/edge_protocol.dart
 lib/listening/edge_tts.dart
+lib/listening/enhancement.dart
+lib/listening/enhancement_controls.dart
 lib/listening/harmony_audio_output.dart
 lib/listening/languages.dart
 lib/listening/listening_speed_control.dart
@@ -479,6 +506,7 @@ lib/listening/widgets.dart
 lib/loading_handoff.dart
 lib/loading_ui.dart
 lib/local_book_archive.dart
+lib/local_book_batch_page.dart
 lib/local_book_edit_widgets.dart
 lib/local_book_editor.dart
 lib/local_book_handoff.dart
@@ -490,6 +518,7 @@ lib/local_book_maintenance.dart
 lib/local_book_media.dart
 lib/local_book_navigation.dart
 lib/local_book_removal.dart
+lib/local_book_scanner.dart
 lib/local_book_series.dart
 lib/local_book_tags_editor.dart
 lib/local_books.dart
@@ -501,6 +530,7 @@ lib/local_epub_markup.dart
 lib/local_epub_media.dart
 lib/local_epub_navigation.dart
 lib/local_image_layout.dart
+lib/local_import_batch.dart
 lib/local_import_options.dart
 lib/local_import_page.dart
 lib/local_import_review.dart
@@ -511,6 +541,8 @@ lib/local_linked_text_index.dart
 lib/local_maintenance_page.dart
 lib/local_markup_decode.dart
 lib/local_platform.dart
+lib/local_scan_page.dart
+lib/local_scan_selection.dart
 lib/local_series_actions.dart
 lib/local_series_editor.dart
 lib/local_text_import.dart
@@ -536,6 +568,7 @@ lib/palette_platform.dart
 lib/palette_settings_page.dart
 lib/performance_preferences.dart
 lib/personal_images.dart
+lib/portable_book_prepare.dart
 lib/publication_catalog.dart
 lib/quote_card.dart
 lib/read_only_text.dart
@@ -573,6 +606,7 @@ lib/reader_page_anchor.dart
 lib/reader_page_physics.dart
 lib/reader_paged_view.dart
 lib/reader_pagination.dart
+lib/reader_paper_geometry.dart
 lib/reader_preferences.dart
 lib/reader_reflow.dart
 lib/reader_rich_content.dart
@@ -613,6 +647,7 @@ lib/reading_moments_ui.dart
 lib/reading_report_dimensions.dart
 lib/reading_report_fonts.dart
 lib/reading_report_options.dart
+lib/reading_report_page.dart
 lib/reading_report_range.dart
 lib/reading_statistics_analysis.dart
 lib/reading_statistics_analysis_view.dart
@@ -627,7 +662,11 @@ lib/reading_visual_theme_picker.dart
 lib/reading_widget_cards.dart
 lib/reading_widget_controller.dart
 lib/reading_widget_design.dart
+lib/reading_widget_reference.dart
+lib/reading_widget_reference_capture.dart
 lib/reading_widget_settings_page.dart
+lib/reading_widget_skin.dart
+lib/reading_widget_skin_picker.dart
 lib/reading_widget_snapshot.dart
 lib/recent_searches.dart
 lib/review_content.dart
@@ -736,6 +775,7 @@ pubspec.lock
 pubspec.yaml
 scripts/build_harmony.sh
 scripts/generate_android_reading_widget_layouts.py
+scripts/probe_wenku_api.py
 scripts/stage_harmony_metadata.cjs
 scripts/sync_android_reading_widget_assets.py
 scripts/sync_harmony_reading_widget_art_117.py
@@ -751,6 +791,10 @@ site/activity.mjs
 site/content.json
 site/site.css
 site/template.html
+test/fork_audio_modules_test.dart
+test/fork_import_test.dart
+test/fork_online_adapter_test.dart
+test/fork_reading_repair_test.dart
 third_party/JUNIVERSALCHARDET.md
 third_party/juniversalchardet-2.0.4/.github/workflows/maven.yml
 third_party/juniversalchardet-2.0.4/.gitignore

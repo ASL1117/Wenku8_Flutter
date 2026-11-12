@@ -294,6 +294,7 @@ class ReaderPaperPainter extends SnapshotPainter {
     required double lift,
     required Size size,
   }) {
+    if (paperMesh.indices.isEmpty) return;
     Int32List colors(ReaderPaperMesh mesh, bool ink) => Int32List.fromList([
       for (final normal in mesh.normals)
         if (ink)

@@ -53,3 +53,11 @@ build files and notices: third_party/juniversalchardet-2.0.4/.
 Apache POI HWPF 5.5.1 and document dependency notices: assets/licenses/poi.txt.
 
 0.5.0 source distribution: upstream library test suites and sample fixtures are omitted; runtime library sources and original licenses are retained.
+
+Fork iOS integration and missing public-module repairs, 2026-11-11:
+Native Swift transport and Dart online adapters adapted from ASL1117/Wenku8_Flutter
+ios-v0.2.4, retaining session isolation and Android ICU-compatible GBK encoding.
+Minute-bound relay authentication derives from YeXuanHs/novvera-app,
+commit a4b603210c91595dc5a10134b56a047e56153fb6, GNU GPL version 3.
+https://github.com/YeXuanHs/novvera-app
+Full license: assets/licenses/GPL-3.0.txt.
