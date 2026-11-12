@@ -1,5 +1,7 @@
 # 轻小说文库 · Wenku8 Flutter
 
+本 Fork 发布独立修复的 **iOS 0.5.6（构建 2278）**：恢复联网并补齐缺失模块，跨设备接力暂不可用，采用独立的源码预览应用标识。详情见 [Fork 构建与发布说明](docs/work-items/iOS移植/Fork修复构建与发布说明.md)。
+
 <p>
   <a href="README.md" title="Read in English"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/language-en-inactive-dark.svg" /><img src="docs/images/language-en-inactive-light.svg" width="124" height="36" alt="English" /></picture></a><a href="README_ZH.md" title="简体中文 · 当前语言"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/language-zh-active-dark.svg" /><img src="docs/images/language-zh-active-light.svg" width="124" height="36" alt="简体中文（当前语言）" /></picture></a>
 </p>

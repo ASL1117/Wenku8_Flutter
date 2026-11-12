@@ -1,5 +1,7 @@
 # Light Novel Library · Wenku8 Flutter
 
+This fork publishes an independently repaired **iOS 0.5.6 build 2278**. Online reading is restored; nearby-device handoff is unavailable. It uses a separate source-preview app identity. See [fork build and release notes](docs/work-items/iOS移植/Fork修复构建与发布说明.md).
+
 <p>
   <a href="README.md" title="English · Current language"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/language-en-active-dark.svg" /><img src="docs/images/language-en-active-light.svg" width="124" height="36" alt="English (current language)" /></picture></a><a href="README_ZH.md" title="切换到简体中文"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/language-zh-inactive-dark.svg" /><img src="docs/images/language-zh-inactive-light.svg" width="124" height="36" alt="简体中文" /></picture></a>
 </p>

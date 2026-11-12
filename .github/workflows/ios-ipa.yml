@@ -2,12 +2,18 @@ name: iOS IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_only:
+        description: Publish the already verified 0.5.6 build
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: ${{ !inputs.publish_only }}
     runs-on: macos-15
     timeout-minutes: 60
     env:
@@ -71,3 +77,50 @@ jobs:
           open -a "$DEVELOPER_DIR/Applications/Simulator.app" --args -CurrentDeviceUDID "$device_id"
           xcrun simctl bootstatus "$device_id" -b
           flutter test integration_test/fork_online_smoke_test.dart --no-pub -d "$device_id"
+  publish-release:
+    if: ${{ inputs.publish_only }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ASL1117/Wenku8_Flutter
+      RELEASE_TAG: ios-v0.5.6-fork.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify the exact successful build and artifact
+        run: |
+          set -euo pipefail
+          test "$(gh run view 43135439095 --json conclusion --jq .conclusion)" = success
+          test "$(gh run view 43135439095 --json headSha --jq .headSha)" = 8f2d3bc580571febbdf3214afa60576d7b58737c
+          gh run download 43135439095 --name Wenku8-ios-arm64-unsigned --dir dist/ios
+          test "$(cat dist/ios/SOURCE_COMMIT.txt)" = 8f2d3bc580571febbdf3214afa60576d7b58737c
+          python3 tools/verify_ios_package.py dist/ios
+      - name: Upload and verify draft assets before publication
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json isDraft > /tmp/wenku-release.json 2>/dev/null; then
+            python3 -c 'import json; assert json.load(open("/tmp/wenku-release.json"))["isDraft"], "Do not replace published assets"'
+          else
+            gh release create "$RELEASE_TAG" --draft --prerelease --target "$GITHUB_SHA" --title '轻小说文库 iOS 0.5.6 Fork 修复版（构建 2278）' --notes-file docs/work-items/iOS移植/Fork修复构建与发布说明.md
+          fi
+          gh release upload "$RELEASE_TAG" dist/ios/*.ipa dist/ios/SHA256SUMS.txt dist/ios/SOURCE_COMMIT.txt dist/ios/BUILD_VALIDATION.json --clobber
+          gh api "repos/$GH_REPO/releases" --jq 'map(select(.tag_name=="ios-v0.5.6-fork.1"))|.[0]' > /tmp/wenku-uploaded.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          release=json.load(open('/tmp/wenku-uploaded.json'))
+          assert release['draft']
+          expected={p.name for p in pathlib.Path('dist/ios').iterdir() if p.is_file()}
+          assert {a['name'] for a in release['assets']}==expected
+          for asset in release['assets']:
+              path=pathlib.Path('dist/ios')/asset['name']
+              assert asset['state']=='uploaded' and path.stat().st_size==asset['size']
+              assert asset['digest']=='sha256:'+hashlib.file_digest(path.open('rb'),'sha256').hexdigest()
+          assert len(release['assets'])==4
+          PY
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+          gh release view "$RELEASE_TAG" --json url,isDraft,isPrerelease
