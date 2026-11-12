@@ -24,7 +24,11 @@ enum NativePdfImport {
       guard bytes <= 64 * 1024 * 1024 else {
         throw BookDocumentFailure(code: "pdf_limit", message: "PDF 文字超过导入大小限制")
       }
-      try sink.write(contentsOf: data)
+      if #available(iOS 13.4, *) {
+        try sink.write(contentsOf: data)
+      } else {
+        sink.write(data)
+      }
     }
     guard bytes > 0 else {
       throw BookDocumentFailure(code: "pdf_no_text", message: "PDF 不含可提取文字；扫描版需先进行文字识别")
